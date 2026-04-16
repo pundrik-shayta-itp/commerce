@@ -21,18 +21,6 @@ npm install
 npm run dev
 ```
 
-Build for production:
-
-```bash
-npm run build
-```
-
-Preview the production build:
-
-```bash
-npm run preview
-```
-
 ## Architecture
 
 ### Core modules
