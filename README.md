@@ -71,13 +71,56 @@ npm run preview
 - State: `NoProductState`, `HasProductState`, and `SuccessfulState` isolate cart behavior based on lifecycle phase.
 - Template Method: `CheckoutTemplate.execute()` orchestrates validation, tamper detection, token verification, and order creation.
 
-## Data Flow
+## Data Flow Diagram
 
-1. Pages use `useCommerce()` to call provider actions.
-2. `CommerceContext` updates React state and writes to `localStorage`.
-3. Cross-tab changes are synchronized via `storage` event listeners.
-4. Checkout uses the template pipeline and state machine guards.
-5. Timeline events and remote snapshots are pushed to simulated remote storage.
+### Entities
+- User / Browser
+- UI Pages: LoginPage, ItemsPage, CartPage, OrdersPage, LifecyclePage
+- CommerceContext provider
+- State pattern nodes: NoProductState, HasProductState, SuccessfulState
+- CheckoutTemplate
+- CartMemento
+- NotificationCenter
+- FakeStore API
+- JSONPlaceholder API
+
+### Data Stores
+- Browser localStorage:
+  - `commerce.session`
+  - `commerce.cart`
+  - `commerce.history`
+  - `commerce.state`
+  - `commerce.products`
+  - `commerce.products.signature`
+  - `commerce.checkout.token`
+  - `commerce.checkout.idempotency`
+  - `commerce.checkout.timeline`
+  - `commerce.user.profiles`
+  - `commerce.catalog.500`
+
+### Flow
+1. User opens the app and navigates via routes guarded by `ProtectedRoute` / `PublicLoginRoute`.
+2. LoginPage submits credentials to `CommerceContext.login()`.
+3. Login flow calls `loginRequest()`, sets `user/authToken`, restores profile, and bootstraps remote history.
+4. ItemsPage calls `loadProducts()`, which reads product cache or fetches from FakeStore.
+5. Product data is persisted to `localStorage` and signed with `productsSignature`.
+6. CartPage operations update `cartItems` and `cartChecksum` through the state machine.
+7. Each cart mutation writes updated state to `localStorage` and may emit timeline events.
+8. Checkout begins with `ensureLatestBeforeCheckout()` to protect against stale cross-tab state.
+9. Token validation and checkout locking prevent double-submit and token reuse.
+10. `CheckoutTemplate.execute()` validates the cart, detects tampering, checks token, and creates an order.
+11. On success, the order is registered, remote write is triggered, the cart is cleared, and state transitions to `successful`.
+12. On failure, `CartMemento.rollback()` restores the previous safe cart state and timeline logs the rollback.
+13. `storage` events sync changes from other tabs into the provider state.
+14. Notifications publish user-facing status and error messages.
+15. LifecyclePage renders current state, timeline logs, and performance metrics.
+
+### Visual flow
+- User → UI Page → CommerceContext → State pattern → LocalStorage / APIs / Notifications
+- Checkout branch:
+  - CommerceContext → CartMemento → CheckoutTemplate → registerOrder → Remote API
+- Cross-tab branch:
+  - localStorage writes → `storage` event → CommerceContext sync
 
 ## State Machine Table
 
