@@ -1,5 +1,9 @@
 # Commerce App
 
+## Video Link
+
+https://drive.google.com/file/d/1brDL3tORO1RqJ1LYRAK3HmbysH5bMCag/view?usp=sharing
+
 A React + Vite commerce demo application with robust frontend-only resilience, state management, checkout validation, timeline tracking, and cross-tab synchronization.
 
 ## Overview
